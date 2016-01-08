@@ -1,14 +1,7 @@
 package server;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -143,6 +136,7 @@ class ClientServiceThread extends Thread {
 			do{
 				try
 				{
+					// Authentication
 					int row = 0;
 					while(!auth.isAccepted()){
 						
@@ -208,11 +202,12 @@ class ClientServiceThread extends Thread {
 						System.out.println("Home: " + auth.getHome());
 						System.out.println("Username: " + auth.isAccepted());
 					}
+					// list all the files in the current directory
 					else if(message.equals("list")){
 							File[] fList = userDir.listFiles();
 							out.writeObject(fList);
 					}
-					else if(message.equals("")){
+					else if(message.equals("push")){
 //						boolean running = true;
 //						int step = 0;
 //						

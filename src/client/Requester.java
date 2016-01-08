@@ -81,16 +81,21 @@ public class Requester extends Thread{
 				option = choose();
 				
 				switch(option){
+				case 1:
+					// copy a selected file from the server
+					break;
 				case 2:
-					message = "push";
-					sendMessage(message);
-					step = 0;
-						if(step == 0){
-							str = (String)in.readObject();
-							System.out.println("server < " + str);
-						}
+					//move selected file to the server
+//					message = "push";
+//					sendMessage(message);
+//					step = 0;
+//						if(step == 0){
+//							str = (String)in.readObject();
+//							System.out.println("server < " + str);
+//						}
 					break;
 				case 3:
+					// list all the files to the server
 					message = "list";
 					sendMessage(message);
 					do{
@@ -106,7 +111,11 @@ public class Requester extends Thread{
 						str = "done";
 					}while(!str.equals("done"));
 					break;
+				case 4:
+					// move to a different directory
+					break;
 				case 5:
+					// Make a new directory
 					message = "newdir";
 					sendMessage(message);
 					
@@ -118,6 +127,7 @@ public class Requester extends Thread{
 					
 					break;
 				case 6:
+					// log out
 					message = "bye";
 					sendMessage(message);
 					break;
@@ -165,11 +175,11 @@ public class Requester extends Thread{
 	private int choose(){
 		int opt = 0;
 		
-		System.out.println("\n\n1 - Copy file from the server");
-		System.out.println("2 - Move file to the server");
+		System.out.println("\n\n1 - Copy file from the server (not working)");
+		System.out.println("2 - Move file to the server (not working)");
 		System.out.println("3 - List all the files");
-		System.out.println("4 - Move to a different directory");
-		System.out.println("5 - Make a new directory");
+		System.out.println("4 - Move to a different directory (not working)");
+		System.out.println("2 - Make a new directory");
 		System.out.println("6 - Logout");
 		
 		System.out.print("> ");
