@@ -6,6 +6,7 @@ public class ClientAuthentication implements Authenticatable {
 	private String username;
 	private String password;
 	private boolean accepted;
+	private String home;
 	
 	// Constructor
 	public ClientAuthentication(){
@@ -61,5 +62,15 @@ public class ClientAuthentication implements Authenticatable {
 	@Override
 	public void setAccepted(boolean accepted) {
 		this.accepted = accepted;
+	}
+	
+	@Override
+	public String getHome(){
+		return this.home;
+	}
+	
+	@Override
+	public void setHome(String home){
+		this.home = home;
 	}
 }

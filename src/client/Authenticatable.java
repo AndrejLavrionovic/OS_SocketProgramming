@@ -14,5 +14,9 @@ public interface Authenticatable {
 	boolean isAccepted();
 	
 	void setAccepted(boolean accepted);
+	
+	String getHome();
+	
+	void setHome(String home);
 
 }
