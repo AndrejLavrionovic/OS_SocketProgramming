@@ -1,13 +1,7 @@
 package server;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -37,15 +31,13 @@ class ClientServiceThread extends Thread {
 	private Socket clientSocket;
 	private String message = null;
 	private int clientID = -1;
-	private boolean running = true;
 	private ObjectOutputStream out;
 	private ObjectInputStream in;
 	private String usersFile = "clients.txt";
 	private String[][] usersList;
 	private Authenticatable auth;
-	
-	private String username;
-	private String password;
+	private File userDir;
+	private String home;
 
 	// Constructor
 	ClientServiceThread(Socket s, int i) {
@@ -94,16 +86,35 @@ class ClientServiceThread extends Thread {
 	  
 		return u;
 	}
+	
+	// User validation
+	public boolean validUser(String username, String password, String[][] users){
+		
+		boolean valid = false;
+		int i;
+		
+		for(i = 0; i < users.length; i++){
+			if(username.equals(users[i][0])){
+				if(password.equals(users[i][1])){
+					valid = true;
+					break;
+				}
+			}
+		}
+		return valid;
+	}
   
 	// Thread
 	public void run() {
-
 		
 		System.out.println("Accepted Client : ID - " + clientID + " : Address - "
 		+ clientSocket.getInetAddress().getHostName());
 		
 		try 
 		{
+
+			usersList = users(usersFile);
+			
 			// Instance of authentication bunch
 			auth = new ClientAuthentication();
 			
@@ -125,54 +136,107 @@ class ClientServiceThread extends Thread {
 			do{
 				try
 				{
-					// 1) Authentification
-					while(auth.isAccepted() == false){
-						boolean isUser = false;
-						boolean isPass = false;
+					// Authentication
+					int row = 0;
+					while(!auth.isAccepted()){
 						
-						sendMessage("Enter Your Username and Password:");
+						message = (String)in.readObject();
+						System.out.println("client " + clientID + " < " + message);
 						
-						Authenticatable a  = (ClientAuthentication)in.readObject();
 						
-						username = a.getUsername();
-						password = a.getPassword();
-						
-						if(!username.isEmpty() && username != null){
-							for(int i = 0; i < usersList.length; i++){
-								if(username.equals(usersList[i][0])){
-									isUser = true;
-									
-									if(!password.isEmpty() && password != null){
-										if(password.equals(usersList[i][1])){
-											isPass = true;
-											sendMessage("Hi " + username + ", you login is successful");
-											auth.setUsername(username);
-											auth.setPassword(password);
-											auth.setAccepted(true);
-											
-											out.writeObject(auth);
-										}
+						if(message.equals("user")){
+							sendMessage("Username:");
+							System.out.println("client " + clientID + " is not authorised!");
+						}
+						else{
+							if(auth.getUsername() == null && auth.getPassword() == null){
+								boolean flag = true;
+								auth.setUsername(message);
+								
+								for(int i = 0; i < usersList.length; i++){
+									if(auth.getUsername().equals(usersList[i][0])){
+										message = "Password:";
+										flag = false;
+										row = i;
+										sendMessage(message);
+										break;
 									}
 								}
+								if(flag){
+									System.out.println("Username " + auth.getUsername() + " is not valid!");
+									auth.setUsername(null);
+									sendMessage("Username:");
+									row = 0;
+								}
 							}
-							System.out.println("Clients user name is " + username);
+							else if(auth.getUsername() != null && auth.getPassword() == null){
+								auth.setPassword(message);
+								if(auth.getPassword().equals(usersList[row][1])){
+									auth.setAccepted(true);
+									
+									// CREATE USER.HOME DIRECTORY
+									home = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + auth.getUsername();
+									auth.setHome(home);
+									userDir = new File(auth.getHome());
+									message = "Hello " + auth.getUsername() + "; your dirrectory is: " + home;
+									sendMessage(message);
+								}
+								else{
+									System.out.println("Password " + auth.getPassword() + " is not valid!");
+									auth.setPassword(null);
+									message = "Password:";
+									sendMessage(message);
+								}
+							}
 						}
-//						while(auth.getUsername() == null){
-//							// Ask client to promt username
-//							message = "Enter Your Username:";
-//							out.writeObject(message);
-//							out.flush();
-//							
-//							// Receive username from client
-//							//username = (String)in.readObject();
-//						}
-//						//sendMessage("Your username is: " + username);
 					}
+					message = (String)in.readObject();
 					
-					// Communication with client
+					if(message.equals("bye")){
+						auth.setUsername(null);
+						auth.setPassword(null);
+						auth.setHome(null);
+						auth.setAccepted(false);
+						
+						System.out.println("Username: " + auth.getUsername());
+						System.out.println("Password: " + auth.getPassword());
+						System.out.println("Home: " + auth.getHome());
+						System.out.println("Username: " + auth.isAccepted());
+					}
+					// list all the files in the current directory
+					else if(message.equals("list")){
+							File[] fList = userDir.listFiles();
+							out.writeObject(fList);
+					}
+					else if(message.equals("push")){
+//						boolean running = true;
+//						int step = 0;
+//						
+						sendMessage("Send me a file");
+//						
+//						File f = (File)in.readObject();
+//						if(f != null){
+//							String path
+//						}
+					}
+					else if(message.equals("newdir")){
+						boolean running = true;
+						sendMessage("Name of Directory");
+						
+						do{
+							String dirName = (String)in.readObject();
+							if(new File(auth.getHome() + File.separator + dirName).mkdir()){
+								sendMessage("Directory " + dirName + " is created!");
+								running = false;
+							}
+							else
+								sendMessage("Making directory faild!");
+						}while(running);
+					}
+//					
+//					// Communication with client
 //					message = (String)in.readObject();
 //					System.out.println("client " + clientID + " < " + message);
-//					//if (message.equals("bye"))
 //					sendMessage("server got the following: " + message);
 				}
 				catch(ClassNotFoundException classnot){

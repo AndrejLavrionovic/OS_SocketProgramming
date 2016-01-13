@@ -6,6 +6,9 @@ import java.util.Scanner;
 
 public class Requester extends Thread{
 	
+	// CONSTANCE
+	private final String HOME = System.getProperty("user.home") + File.separator + "Desktop";
+	
 	// Instances and variables
 	private Socket requestSocket;
 	private ObjectOutputStream out;
@@ -13,10 +16,8 @@ public class Requester extends Thread{
 	private String message = "";
 	private String ipaddress;
 	private Scanner stdin;
-	private Authenticatable auth;
-	
-	private String username;
-	private String password;
+	private boolean state;
+	private int option;
  	
  	// Empty constructor
 	Requester(){}
@@ -24,7 +25,6 @@ public class Requester extends Thread{
 	// run() method
 	public void run()
 	{
-		auth = new UserAuthentication();
 		stdin = new Scanner(System.in);
 		try{
 			//1. creating a socket to connect to the server
@@ -43,46 +43,96 @@ public class Requester extends Thread{
 			in = new ObjectInputStream(requestSocket.getInputStream());
 			System.out.println("Hello");
 			
+			state = false;
+			
 			//3: Communicating with the server
 			//******************************************************************************
 			do{
 				// Authentication
-				while(auth.isAccepted() == false){
-						message = (String)in.readObject();
-						System.out.println("server < " + message);
+				//********************************************
+				while(!state){
+					String str = (String)in.readObject();
+					System.out.println("server < " + str);
 					
-					if(message.equals("Enter Your Username and Password:")){
-						System.out.print("Username > ");
-						username = stdin.next();
-						auth.setUsername(username);
-						
-						System.out.print("Password > ");
-						password = stdin.next();
-						auth.setPassword(password);
-						
-						out.writeObject(auth);
-					}
-					
-					Authenticatable a = (UserAuthentication)in.readObject();
-					if(a.isAccepted() == true){
-						auth.setAccepted(a.isAccepted());
-						auth.setUsername(a.getUsername());
-						auth.setPassword(a.getPassword());
+					// Authentication
+					switch(str){
+					case "Connection successful":
+						message = "user";
+						sendMessage(message);
+						break;
+					case "Username:":
+						System.out.print("> ");
+						message = stdin.next();
+						sendMessage(message);
+						break;
+					case "Password:":
+						System.out.print("> ");
+						message = stdin.next();
+						sendMessage(message);
+						break;
+					default:
+						state = true;
 					}
 				}
 				
-				// Receive message
-//					do{
-//						message = (String)in.readObject();
-//						
-//						if(!message.equalsIgnoreCase("done")){
-//							System.out.println("server < " + message);
+				String str = null;
+				int step;
+				
+				option = choose();
+				
+				switch(option){
+				case 1:
+					// copy a selected file from the server
+					break;
+				case 2:
+					//move selected file to the server
+//					message = "push";
+//					sendMessage(message);
+//					step = 0;
+//						if(step == 0){
+//							str = (String)in.readObject();
+//							System.out.println("server < " + str);
 //						}
-//					}while(!message.equalsIgnoreCase("done"));
-//					
-				System.out.println("Please Enter the Message to send...");
-				message = stdin.nextLine();
-				sendMessage(message);
+					break;
+				case 3:
+					// list all the files to the server
+					message = "list";
+					sendMessage(message);
+					do{
+						File[] f = (File[])in.readObject();
+						if(f != null){
+							for(File file : f){
+								System.out.println(file.getName());
+							}
+						}
+						else{
+							System.out.println("Directory is empty");
+						}
+						str = "done";
+					}while(!str.equals("done"));
+					break;
+				case 4:
+					// move to a different directory
+					break;
+				case 5:
+					// Make a new directory
+					message = "newdir";
+					sendMessage(message);
+					
+					str = (String)in.readObject();
+					System.out.println("server < " + str);
+					
+					System.out.print("> ");
+					message = stdin.next();
+					
+					break;
+				case 6:
+					// log out
+					message = "bye";
+					sendMessage(message);
+					break;
+				}
+				
 			}while(!message.equals("bye"));
 		}
 		catch(UnknownHostException unknownHost){
@@ -119,6 +169,28 @@ public class Requester extends Thread{
 		catch(IOException ioException){
 			ioException.printStackTrace();
 		}
+	}
+	
+	// Choose method
+	private int choose(){
+		int opt = 0;
+		
+		System.out.println("\n\n1 - Copy file from the server (not working)");
+		System.out.println("2 - Move file to the server (not working)");
+		System.out.println("3 - List all the files");
+		System.out.println("4 - Move to a different directory (not working)");
+		System.out.println("5 - Make a new directory");
+		System.out.println("6 - Logout");
+		
+		System.out.print("> ");
+		opt = stdin.nextInt();
+		
+		while(opt < 1 || opt > 6){
+			System.out.print("Choose between 1 and 6 > ");
+			opt = stdin.nextInt();
+		}
+		
+		return opt;
 	}
 	
 	// main method
